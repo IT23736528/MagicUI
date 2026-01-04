@@ -14,6 +14,8 @@ export const usersTable = pgTable("users", {
 export const ProjectTable=pgTable('project',{
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   projectId:varchar().notNull(),
+  projectName: varchar(),
+  theme: varchar(),
   userInput:varchar(),
   device:varchar(),
   createdOn:date().defaultNow(),

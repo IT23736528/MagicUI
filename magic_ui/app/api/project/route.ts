@@ -3,6 +3,7 @@ import { db } from "@/config/db";
 import { ProjectTable } from "@/config/schema";
 import { currentUser } from "@clerk/nextjs/server";
 import crypto from "crypto";
+import { and, eq } from "drizzle-orm";
 
 
 
@@ -20,4 +21,18 @@ export async function POST(req: NextRequest){
     }).returning();
 
     return NextResponse.json(result[0]);
+}
+
+export async function GET(req: NextRequest) {
+    const projectId= await req.nextUrl.searchParams.get('projectId');
+    const user = await currentUser()
+
+    try{
+    const result = await db.select().from(ProjectTable).where(and(eq(ProjectTable.projectId,projectId as string),eq(ProjectTable.userId,user?.primaryEmailAddress?.emailAddress as string)))
+
+    return NextResponse.json(result[0]);
+    } 
+    catch(e) {
+        return NextResponse.json({ msg: 'Error'});
+    }
 }

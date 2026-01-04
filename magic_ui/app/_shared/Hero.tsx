@@ -66,6 +66,7 @@ const Hero = () => {
     setLoading(false);
 
     //navigate to project page
+    router.push('/project/' + result.data.projectId);
     }
 
     const [mounted, setMounted] = useState(false);
