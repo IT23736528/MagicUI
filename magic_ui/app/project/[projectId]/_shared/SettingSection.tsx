@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Camera, Share, Sparkles } from 'lucide-react';
-import { THEME_NAME_LIST, THEMES } from '@/components/ui/data/Themes';
+import { THEME_NAME_LIST, THEMES } from '@/data/Themes';
 
 const SettingSection = () => {
 

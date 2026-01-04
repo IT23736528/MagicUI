@@ -7,6 +7,7 @@ import SettingSection from './_shared/SettingSection'
 import axios from 'axios'
 import { set } from 'date-fns'
 import { Loader2Icon } from 'lucide-react'
+import { ScreenConfig, ProjectType } from '@/type/types'
 
 const ProjectCanvasPlayground = () => {
   
@@ -14,6 +15,8 @@ const ProjectCanvasPlayground = () => {
 
   const {projectId} = useParams();
   const [projectDetail, setProjectDetail] = useState<ProjectType>();
+  const [screenConfig, setScreenConfig] = useState<ScreenConfig[]>();
+
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingMsg, setLoadingMsg] = useState<string>("Loading");
 
@@ -25,7 +28,31 @@ const ProjectCanvasPlayground = () => {
     setLoadingMsg("Loading Project Details...");
     const result = await axios.get('/api/project?projectId=' + projectId);
     console.log(result.data);
-    setProjectDetail(result?.data);
+    setProjectDetail(result?.data?.projectDetail);
+    setScreenConfig(result?.data?.screenConfig);
+    /*if(result.data?.screenConfig.length === 0) {
+        generateScreenConfig();
+    } */
+    setLoading(false);
+  }
+
+  useEffect(()=> {
+    if(projectDetail&&screenConfig&&screenConfig.length === 0){
+        console.log("Project Detail and Screen Config Loaded");
+        generateScreenConfig();
+    }
+  },[projectDetail&&screenConfig])
+
+  const generateScreenConfig= async()=> {
+    setLoading(true);
+    setLoadingMsg("Generating Screen Config...");
+    const result = await axios.post('/api/generate-config', {
+        projectId: projectId,
+        deviceType: projectDetail?.device,
+        userInput: projectDetail?.userInput,
+  });
+
+  console.log("Generated Screen Config:", result.data);
     setLoading(false);
   }
 
