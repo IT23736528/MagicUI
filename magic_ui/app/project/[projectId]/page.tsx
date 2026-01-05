@@ -36,24 +36,52 @@ const ProjectCanvasPlayground = () => {
     setLoading(false);
   }
 
-  useEffect(()=> {
-    if(projectDetail&&screenConfig&&screenConfig.length === 0){
-        console.log("Project Detail and Screen Config Loaded");
-        generateScreenConfig();
-    }
-  },[projectDetail&&screenConfig])
+  useEffect(() => {
+  if (projectDetail && screenConfig && screenConfig.length === 0) {
+    console.log("Project Detail and Screen Config Loaded");
+    generateScreenConfig();
+  }
+}, [projectDetail, screenConfig]);
+
 
   const generateScreenConfig= async()=> {
+
+     if (!projectDetail?.device || !projectDetail?.userInput || !projectId) {
+    console.warn("Missing required data, skipping generateScreenConfig");
+    return;
+  }
+
     setLoading(true);
     setLoadingMsg("Generating Screen Config...");
-    const result = await axios.post('/api/generate-config', {
-        projectId: projectId,
-        deviceType: projectDetail?.device,
-        userInput: projectDetail?.userInput,
-  });
-
-  console.log("Generated Screen Config:", result.data);
-    setLoading(false);
+    try {
+      const result = await axios.post(
+        '/api/generate-config',
+        {
+          projectId: projectId,
+          deviceType: projectDetail?.device,
+          userInput: projectDetail?.userInput,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      console.log("Generated Screen Config:", result.data);
+      // TODO: setScreenConfig(result.data) if needed
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data,
+        });
+      } else {
+        console.error('Unexpected error:', error);
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -62,7 +90,7 @@ const ProjectCanvasPlayground = () => {
 
       
       <div className="flex">
-        {loading && <div className='p-3 absolute bg-blue-300/20 border border-blue-400 border rounded-xl left-1/2 top-20'>
+        {loading && <div className='p-3 absolute bg-blue-300/20 border-blue-400 rounded-xl left-1/2 top-20'>
             <h2 className='flex gap-2 items-center'> <Loader2Icon className='animated-spin'/> {loadingMsg}</h2>
         </div>}
 
