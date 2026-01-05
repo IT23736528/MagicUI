@@ -84,7 +84,7 @@ export default function ProjectCanvasPlayground() {
 
         setLoadingMsg(`Generating Screen ${index + 1} of ${screenConfig.length}`);
         
-        await axios.post('/api/generate-screen-ui', {
+        const result = await axios.post('/api/generate-screen-ui', {
           projectId,
           screenId: screen.screenId,
           screenName: screen.screenName,
@@ -92,6 +92,11 @@ export default function ProjectCanvasPlayground() {
           screenDescription: screen.screenDescription || '',
           projectVisualDescription: projectDetail?.userInput || ''
         });
+
+        console.log(result.data);
+
+        setScreenConfig(prev=>prev.map((item,i)=>
+        (i === index ? result.data : item)))
       }
       // Finally, fetch the updated details once everything is done
       await GetProjectDetail();
