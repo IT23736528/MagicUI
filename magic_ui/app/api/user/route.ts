@@ -5,21 +5,39 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
-    const user=await currentUser();
+    try {
+        const user = await currentUser();
 
-    const users=await db.select().from(usersTable).where(eq(usersTable.email,user?.primaryEmailAddress?.emailAddress as string));
-
-    if(users.length === 0){
-        const data= {
-            name: user?.fullName??'',
-            email: user?.primaryEmailAddress?.emailAddress as string
-            
+        // 1. Check if user is actually logged in via Clerk
+        if (!user || !user.primaryEmailAddress?.emailAddress) {
+            return NextResponse.json({ error: "Unauthorized: No user found" }, { status: 401 });
         }
 
-        const result=await db.insert(usersTable).values({...data}).returning();
+        const userEmail = user.primaryEmailAddress.emailAddress;
 
-        return NextResponse.json(result);
+        // 2. Search for user
+        const users = await db.select()
+            .from(usersTable)
+            .where(eq(usersTable.email, userEmail));
+
+        // 3. If user doesn't exist, create them
+        if (users.length === 0) {
+            const result = await db.insert(usersTable).values({
+                name: user.fullName ?? '',
+                email: userEmail,
+            }).returning();
+
+            return NextResponse.json({ user: result[0] });
+        }
+
+        // 4. Return existing user
+        return NextResponse.json({ user: users[0] });
+
+    } catch (error: any) {
+        console.error("USER_ROUTE_ERROR:", error);
+        return NextResponse.json(
+            { error: "Internal Server Error", details: error.message }, 
+            { status: 500 }
+        );
     }
-
-    return NextResponse.json({user:users[0]});
 }
