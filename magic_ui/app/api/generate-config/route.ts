@@ -1,5 +1,8 @@
+import { db } from "@/config/db";
 import { openrouter } from "@/config/openrouter";
+import { ProjectTable, ScreenConfigTable } from "@/config/schema";
 import { APP_LAYOUT_CONFIG_PROMPT } from "@/data/Prompt";
+import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 const TIMEOUT_MS = 30_000;
@@ -99,13 +102,52 @@ export async function POST(req: NextRequest) {
       parsed = { rawText };
     }
 
+
     // ✅ DEBUG LOG (NOW WORKS)
     console.dir(parsed, { depth: null });
 
+    // Defensive: check for required fields and shape
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      typeof parsed.projectName !== 'string' ||
+      typeof parsed.theme !== 'string' ||
+      !Array.isArray(parsed.screens)
+    ) {
+      console.error('AI returned invalid or empty result:', parsed);
+      return NextResponse.json(
+        { error: 'AI returned invalid or empty result', parsed },
+        { status: 502 }
+      );
+    }
+
+    // Update project table with project name, theme, and optional visual description
+    await db.update(ProjectTable).set({
+      projectVisualDescription: parsed.projectVisualDescription || null,
+      projectName: parsed.projectName,
+      theme: parsed.theme,
+    }).where(eq(ProjectTable.projectId, projectId as string));
+
+    // Insert screen configs (use for...of to await properly)
+    for (const screen of parsed.screens) {
+      await db.insert(ScreenConfigTable).values({
+        projectId: projectId,
+        purpose: screen.purpose,
+        screenDescription: screen.layoutDescription,
+        screenId: screen.id, // fixed: use 'id' not 'screenId'
+        screenName: screen.name,
+      });
+    }
+
     // 7️⃣ Return result (FIXES EMPTY PREVIEW)
+    const responseData = {
+      projectName: parsed.projectName,
+      theme: parsed.theme,
+      screens: parsed.screens,
+    };
     return NextResponse.json({
       success: true,
-      data: parsed,
+      data: responseData,
     });
 
   } catch (error: any) {

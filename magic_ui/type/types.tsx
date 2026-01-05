@@ -17,3 +17,4 @@ export type ScreenConfig = {
     screenDescription: string,
     code?: string,
 }
+

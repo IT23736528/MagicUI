@@ -20,6 +20,7 @@ export const ProjectTable=pgTable('project',{
   device:varchar(),
   createdOn:date().defaultNow(),
   config:json(),
+  projectVisualDescription: text(),
   userId:varchar().references(()=> usersTable.email).notNull()
 })
 

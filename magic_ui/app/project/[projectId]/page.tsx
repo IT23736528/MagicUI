@@ -68,6 +68,8 @@ const ProjectCanvasPlayground = () => {
         }
       );
       console.log("Generated Screen Config:", result.data);
+
+      GetProjectDetail();
       // TODO: setScreenConfig(result.data) if needed
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -94,7 +96,7 @@ const ProjectCanvasPlayground = () => {
             <h2 className='flex gap-2 items-center'> <Loader2Icon className='animated-spin'/> {loadingMsg}</h2>
         </div>}
 
-        <SettingSection />
+        <SettingSection projectDetail={projectDetail} />
         <div className="flex-1 p-4">
           
           {/* Project content goes here */}
