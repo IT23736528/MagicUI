@@ -7,6 +7,7 @@ import SettingSection from './_shared/SettingSection';
 import axios from 'axios';
 import { Loader2Icon } from 'lucide-react';
 import { ScreenConfig, ProjectType } from '@/type/types';
+import Canvas from './_shared/Canvas';
 
 export default function ProjectCanvasPlayground() {
   const { projectId } = useParams();
@@ -110,7 +111,7 @@ export default function ProjectCanvasPlayground() {
   return (
     <div>
       <ProjectHeader />
-      <div className="flex">
+      <div className="flex gap-5">
         {loading && (
           <div className='p-3 absolute bg-blue-300/20 border border-blue-400 rounded-xl left-1/2 top-20 transform -translate-x-1/2 z-50'>
             <h2 className='flex gap-2 items-center'>
@@ -119,15 +120,8 @@ export default function ProjectCanvasPlayground() {
           </div>
         )}
         <SettingSection projectDetail={projectDetail} />
-        <div className="flex-1 p-4">
-          <div className="text-gray-500">
-            {screenConfig.length > 0 ? (
-              <p>Found {screenConfig.length} screen(s)</p>
-            ) : (
-              <p>No screens configured yet</p>
-            )}
-          </div>
-        </div>
+        
+        <Canvas projectDetail={projectDetail} screenConfig={screenConfig}  />
       </div>
     </div>
   );
