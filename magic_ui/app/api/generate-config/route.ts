@@ -4,12 +4,19 @@ import { NextRequest, NextResponse } from "next/server";
 
 const TIMEOUT_MS = 30_000;
 
+// ✅ Flexible response type (SDK-safe)
+type OpenRouterResponse = {
+  choices?: {
+    message?: {
+      content?: any;
+    };
+  }[];
+};
+
 export async function POST(req: NextRequest) {
   try {
     // 1️⃣ API key check
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey || apiKey === "sk-REPLACE_ME") {
-      console.error("Missing or invalid OPENROUTER_API_KEY");
+    if (!process.env.OPENROUTER_API_KEY) {
       return NextResponse.json(
         { error: "Missing OpenRouter API key" },
         { status: 500 }
@@ -17,29 +24,18 @@ export async function POST(req: NextRequest) {
     }
 
     // 2️⃣ Parse body
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 }
-      );
-    }
+    const { userInput, deviceType, projectId } = await req.json();
 
-    const { userInput, deviceType, projectId } = body || {};
     if (!userInput || !deviceType || !projectId) {
       return NextResponse.json(
-        { error: "Missing required fields: userInput, deviceType, projectId" },
+        { error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    const model = "openai/gpt-3.5-turbo";
-
-    // 3️⃣ AI request promise (NO signal)
+    // 3️⃣ AI request (SDK-CORRECT)
     const aiRequest = openrouter.chat.send({
-      model,
+      model: "openai/gpt-3.5-turbo",
       messages: [
         {
           role: "system",
@@ -60,58 +56,65 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    // 4️⃣ Timeout promise
-    const timeoutPromise = new Promise((_, reject) =>
+    // 4️⃣ Timeout protection
+    const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("AI request timed out")), TIMEOUT_MS)
     );
 
-    // 5️⃣ Race
-    const aiResult = await Promise.race([
+    const aiResult = (await Promise.race([
       aiRequest,
       timeoutPromise,
-    ]);
+    ])) as OpenRouterResponse;
 
-    if (!aiResult) {
+    if (!aiResult?.choices?.length) {
       return NextResponse.json(
-        { error: "No result from AI service" },
+        { error: "Empty AI response" },
         { status: 500 }
       );
     }
 
+    // 5️⃣ Extract text SAFELY
+    const content = aiResult.choices[0]?.message?.content;
+
+    let rawText = "";
+
+    if (Array.isArray(content)) {
+      rawText = content.find(c => c.type === "text")?.text || "";
+    } else if (typeof content === "string") {
+      rawText = content;
+    }
+
+    if (!rawText) {
+      return NextResponse.json(
+        { error: "AI returned no text content" },
+        { status: 500 }
+      );
+    }
+
+    // 6️⃣ Parse JSON safely
+    let parsed;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      parsed = { rawText };
+    }
+
+    // ✅ DEBUG LOG (NOW WORKS)
+    console.dir(parsed, { depth: null });
+
+    // 7️⃣ Return result (FIXES EMPTY PREVIEW)
     return NextResponse.json({
       success: true,
-      data: aiResult,
+      data: parsed,
     });
 
   } catch (error: any) {
-    const status = error?.status || error?.response?.status;
-    const message = error?.message || String(error);
-    const providerData =
-      error?.response?.data || error?.data || null;
-
-    let errorType = "unknown";
-    if (message.includes("timed out")) errorType = "timeout";
-    else if (status === 401) errorType = "auth";
-    else if (status === 429) errorType = "quota";
-    else if (status === 404) errorType = "model";
-    else if (/network/i.test(message)) errorType = "network";
-
-    console.error("AI provider error:", {
-      status,
-      message,
-      providerData,
-      errorType,
-    });
-
     return NextResponse.json(
       {
         error: "AI service failed",
-        errorType,
-        status,
-        message,
-        providerData,
+        message: error?.message || "Unknown error",
       },
-      { status: errorType === "timeout" ? 504 : 502 }
+      { status: 502 }
     );
   }
 }
