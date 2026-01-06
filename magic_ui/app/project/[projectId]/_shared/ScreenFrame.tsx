@@ -160,7 +160,7 @@ const ScreenFrame = ({
                 <div className='drag-handle flex justify-between items-center bg-zinc-100 border-b p-3 cursor-move select-none'>
                     <div className='flex items-center gap-2'>
                         
-                        <ScreenHandler screen={screen} theme={theme}/>
+                        <ScreenHandler screen={screen} theme={theme} iframeRef={iframeRef} projectId={projectDetail?.projectId}/>
                         
                     </div>
                     <div className='flex gap-2 items-center'>

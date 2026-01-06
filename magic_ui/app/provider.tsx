@@ -1,4 +1,5 @@
 "use client"
+import { RefreshDataContext } from '@/context/RefreshDataContext';
 import { SettingContext } from '@/context/SettingContext';
 import { UserDetailContext } from '@/context/UserDetailContext';
 import axios from 'axios';
@@ -14,6 +15,8 @@ function provider({children}:any) {
 
     const [settingsDetail,setSettingsDetail]=useState();
 
+    const [refreshData,setRefreshData]=useState();
+
     useEffect(()=> {
         CreateNewUser();
     }, [])
@@ -23,13 +26,16 @@ function provider({children}:any) {
 
         console.log("User created or fetched:", result.data);
         setUserDetail(result?.data);
+
     }
   return (
     <UserDetailContext.Provider value={{userDetail,setUserDetail}}>
       <SettingContext.Provider value={{
         settingsDetail,setSettingsDetail
       }}>
+        <RefreshDataContext.Provider value={{refreshData,setRefreshData}}>
           <div>{children}</div>
+        </RefreshDataContext.Provider>
       </SettingContext.Provider>
     </UserDetailContext.Provider>
   )
