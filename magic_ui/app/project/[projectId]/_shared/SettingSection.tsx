@@ -9,24 +9,23 @@ import { ProjectType } from "@/type/types";
 import { SettingContext } from "@/context/SettingContext";
 import axios from "axios";
 import { RefreshDataContext } from "@/context/RefreshDataContext";
-import { toast } from "sonner"; // Added for better feedback
+import { toast } from "sonner";
 
 type Props = {
   projectDetail?: ProjectType;
   screenDescription?: string;
+  takeScreenshot: () => void; // ✅ Fixed typo and type
 };
 
-const SettingSection = ({ projectDetail, screenDescription }: Props) => {
+const SettingSection = ({ projectDetail, screenDescription, takeScreenshot }: Props) => {
   const [projectName, setProjectName] = useState("");
   const [selectedTheme, setSelectedTheme] = useState("AURORA_INK");
   const [userNewScreenInput, setUserNewScreenInput] = useState("");
   const [loading, setLoading] = useState(false);
   
-  // Destructure properly from context
   const { setRefreshData } = useContext<any>(RefreshDataContext);
   const { setSettingsDetail } = useContext<any>(SettingContext);
 
-  // Sync local state when projectDetail loads
   useEffect(() => {
     if (projectDetail) {
       setProjectName(projectDetail.projectName || "");
@@ -51,18 +50,19 @@ const SettingSection = ({ projectDetail, screenDescription }: Props) => {
 
     try {
       setLoading(true);
-      // Passing userNewScreenInput as the userInput for the AI
       const result = await axios.post('/api/generate-config', {
         projectId: projectDetail?.projectId,
-        projectName: projectName,
+        // ✅ Use local state 'projectName' and 'selectedTheme' 
+        // to ensure AI knows about the latest changes made in the UI
+        projectName: projectName, 
         deviceType: projectDetail?.device,
-        theme: selectedTheme,
-        userInput: userNewScreenInput, // Make sure to pass the new prompt!
+        theme: selectedTheme, 
+        userInput: userNewScreenInput,
         oldScreenDescription: screenDescription,
       });
 
       toast.success("New screen generated!");
-      setUserNewScreenInput(""); // Clear input on success
+      setUserNewScreenInput(""); 
       setRefreshData({ method: 'screenConfig', date: Date.now() });
     } catch (e) {
       console.error(e);
@@ -74,21 +74,19 @@ const SettingSection = ({ projectDetail, screenDescription }: Props) => {
 
   return (
     <div className="w-[300px] bg-gray-100 h-[calc(100vh-65px)] p-4 border-r overflow-y-auto relative">
-      <h2 className="font-bold text-xl mb-4">Settings</h2>
+      <h2 className="font-bold text-xl mb-4 text-slate-800">Settings</h2>
 
-      {/* Loading Overlay */}
       {loading && (
-        <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 text-center">
-          <div className="bg-white p-4 rounded-xl shadow-lg border flex flex-col items-center gap-2">
-            <Loader2Icon className="animate-spin text-blue-600" />
-            <p className="text-sm font-medium">Generating Config...</p>
+        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 text-center">
+          <div className="bg-white p-5 rounded-xl shadow-2xl border border-blue-100 flex flex-col items-center gap-3">
+            <Loader2Icon className="animate-spin text-blue-600 w-8 h-8" />
+            <p className="text-sm font-semibold text-slate-700">Generating Screens...</p>
           </div>
         </div>
       )}
 
-      {/* Project Name Section */}
       <div className="mt-5">
-        <label className="text-xs font-bold uppercase text-gray-500 mb-1 block">
+        <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block tracking-wider">
           Project Name
         </label>
         <Input
@@ -97,31 +95,29 @@ const SettingSection = ({ projectDetail, screenDescription }: Props) => {
           onChange={(e) => {
             const newValue = e.target.value;
             setProjectName(newValue);
-            // ✅ Fix: Use newValue directly instead of the state variable 'projectName'
             setSettingsDetail((prev: any) => ({
               ...prev,
               projectName: newValue
             }));
           }}
-          className="bg-white"
+          className="bg-white border-slate-200 focus:ring-blue-500"
         />
       </div>
 
-      {/* Generate Screen Section */}
       <div className="mt-8">
-        <label className="text-xs font-bold uppercase text-gray-500 mb-1 block">
+        <label className="text-[10px] font-bold uppercase text-slate-500 mb-1 block tracking-wider">
           Generate New Screen
         </label>
         <Textarea
-          placeholder="Enter prompt to generate a screen using AI"
+          placeholder="Describe a new screen (e.g., 'A settings page with dark mode toggle')"
           value={userNewScreenInput}
           onChange={(e) => setUserNewScreenInput(e.target.value)}
-          className="bg-white min-h-[100px]"
+          className="bg-white min-h-[120px] border-slate-200 focus:ring-blue-500"
         />
         <Button 
           size="sm" 
           disabled={loading}
-          className="mt-3 w-full bg-blue-600 hover:bg-blue-700" 
+          className="mt-3 w-full bg-blue-600 hover:bg-blue-700 shadow-md transition-all active:scale-95" 
           onClick={GenerateNewScreen}
         >
           {loading ? <Loader2Icon className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
@@ -129,23 +125,22 @@ const SettingSection = ({ projectDetail, screenDescription }: Props) => {
         </Button>
       </div>
 
-      {/* Themes Selection Section */}
       <div className="mt-8">
-        <label className="text-xs font-bold uppercase text-gray-500 mb-2 block">
+        <label className="text-[10px] font-bold uppercase text-slate-500 mb-2 block tracking-wider">
           Themes
         </label>
         <div className="h-[250px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
           {THEME_NAME_LIST.map((theme) => (
             <div
               key={theme}
-              className={`p-3 border rounded-xl cursor-pointer transition-all hover:border-blue-400 bg-white ${
+              className={`p-3 border rounded-xl cursor-pointer transition-all bg-white shadow-sm ${
                 theme === selectedTheme
-                  ? "border-blue-600 ring-1 ring-blue-600 shadow-sm"
-                  : "border-gray-200"
+                  ? "border-blue-600 ring-2 ring-blue-100 bg-blue-50/30"
+                  : "border-slate-200 hover:border-blue-300"
               }`}
               onClick={() => onThemeSelect(theme)}
             >
-              <h2 className="text-xs font-bold mb-2 uppercase tracking-tight text-gray-700">
+              <h2 className="text-[11px] font-bold mb-2 uppercase tracking-tight text-slate-600">
                 {theme.replace("_", " ")}
               </h2>
               <div className="flex gap-2">
@@ -158,17 +153,16 @@ const SettingSection = ({ projectDetail, screenDescription }: Props) => {
         </div>
       </div>
 
-      {/* Extras Section */}
-      <div className="mt-8 pt-4 border-t border-gray-200 mb-10">
-        <label className="text-xs font-bold uppercase text-gray-500 mb-2 block">
+      <div className="mt-8 pt-4 border-t border-slate-200 mb-10">
+        <label className="text-[10px] font-bold uppercase text-slate-500 mb-2 block tracking-wider">
           Actions
         </label>
         <div className="flex flex-col gap-2">
-          <Button size="sm" variant="outline" className="justify-start">
+          <Button size="sm" variant="outline" className="justify-start border-slate-200 hover:bg-slate-50" onClick={takeScreenshot}>
             <Camera className="mr-2 h-4 w-4" />
             Export Screenshot
           </Button>
-          <Button size="sm" variant="outline" className="justify-start">
+          <Button size="sm" variant="outline" className="justify-start border-slate-200 hover:bg-slate-50">
             <Share className="mr-2 h-4 w-4" />
             Share Project
           </Button>

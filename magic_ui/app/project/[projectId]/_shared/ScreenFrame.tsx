@@ -18,13 +18,14 @@ type Props = {
     projectDetail: ProjectType | undefined;
     screenName?: string;
     screen: ScreenConfig | undefined;
+    iframeRef: any;
 }
 
 const ScreenFrame = ({ 
-    x, y, setPanningEnabled, width, height, htmlCode, projectDetail, screenName, screen
+    x, y, setPanningEnabled, width, height, htmlCode, projectDetail, screenName, screen, iframeRef
 }: Props) => {
     const { settingsDetail } = useContext(SettingContext);
-    const iframeRef = useRef<HTMLIFrameElement | null>(null);
+    // /const iframeRef = useRef<HTMLIFrameElement | null>(null);
     
     // ✅ 1. Use local state for both size AND position
     // This prevents the "snapping back" behavior
