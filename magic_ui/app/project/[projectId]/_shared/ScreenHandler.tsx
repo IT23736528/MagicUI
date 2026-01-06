@@ -2,16 +2,16 @@
 
 import { Button } from '@/components/ui/button';
 import { ScreenConfig } from '@/type/types';
-import { 
-    Code2Icon, 
-    Copy, 
-    Download, 
-    GripVertical, 
-    Loader2Icon, 
-    MoreVertical, 
-    Sparkle, 
-    SparkleIcon, 
-    Trash 
+import {
+    Code2Icon,
+    Copy,
+    Download,
+    GripVertical,
+    Loader2Icon,
+    MoreVertical,
+    Sparkle,
+    SparkleIcon,
+    Trash
 } from 'lucide-react';
 import React, { useContext, useState } from 'react';
 import {
@@ -45,7 +45,7 @@ import { RefreshDataContext } from '@/context/RefreshDataContext';
 type Props = {
     screen: ScreenConfig | undefined;
     theme: any;
-    iframeRef: any;
+    iframeRef: React.MutableRefObject<HTMLIFrameElement | null>;
     projectId: string | undefined;
 };
 
@@ -134,8 +134,8 @@ const ScreenHandler = ({ screen, theme, iframeRef, projectId }: Props) => {
                             <DialogTitle>HTML + TailwindCSS Code</DialogTitle>
                             <DialogDescription className='flex-1 overflow-hidden flex flex-col pt-4'>
                                 <div className='flex-1 overflow-y-auto rounded-md border bg-muted p-4'>
-                                    <SyntaxHighlighter 
-                                        language="html" 
+                                    <SyntaxHighlighter
+                                        language="html"
                                         style={docco}
                                         customStyle={{
                                             margin: 0,
@@ -176,13 +176,13 @@ const ScreenHandler = ({ screen, theme, iframeRef, projectId }: Props) => {
                                 <h4 className='font-medium leading-none'>AI Refinement</h4>
                                 <p className='text-sm text-muted-foreground'>Describe changes for this specific screen.</p>
                             </div>
-                            <Textarea 
+                            <Textarea
                                 placeholder='Example: Change the primary color to blue or add a new pricing section.'
                                 value={editUserInput}
-                                onChange={(e) => setEditUserInput(e.target.value)} 
+                                onChange={(e) => setEditUserInput(e.target.value)}
                             />
                             <Button size='sm' className='w-full' disabled={loading} onClick={editScreen}>
-                                {loading ? <Loader2Icon className='animate-spin h-4 w-4 mr-2' /> : <Sparkle className='h-4 w-4 mr-2' />} 
+                                {loading ? <Loader2Icon className='animate-spin h-4 w-4 mr-2' /> : <Sparkle className='h-4 w-4 mr-2' />}
                                 Regenerate
                             </Button>
                         </div>

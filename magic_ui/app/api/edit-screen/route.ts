@@ -15,13 +15,21 @@ type OpenRouterResponse = {
 export async function POST(req: NextRequest) {
   try {
     // 1️⃣ Parse Body ONCE
-    const body = await req.json();
-    const { 
-        projectId, 
-        screenId, 
-        oldCode, 
-        userInput, 
-        screenName 
+    interface EditScreenBody {
+      projectId: string;
+      screenId: string;
+      oldCode: string;
+      userInput: string;
+      screenName?: string;
+    }
+
+    const body: EditScreenBody = await req.json();
+    const {
+      projectId,
+      screenId,
+      oldCode,
+      userInput,
+      screenName
     } = body;
 
     // 2️⃣ Validation
@@ -68,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     // 5️⃣ AI Request
     const aiRequest = await openrouter.chat.send({
-      model: "openai/gpt-3.5-turbo", 
+      model: "openai/gpt-3.5-turbo",
       messages: [
         {
           role: "system",
@@ -85,9 +93,9 @@ export async function POST(req: NextRequest) {
 
     // 6️⃣ Extract and Clean Content
     const content = aiResult?.choices?.[0]?.message?.content;
-    let generatedCode = Array.isArray(content) 
-        ? content.find((c: any) => c.type === "text")?.text || "" 
-        : content || "";
+    let generatedCode = Array.isArray(content)
+      ? content.find((c: any) => c.type === "text")?.text || ""
+      : content || "";
 
     if (!generatedCode) {
       return NextResponse.json({ error: "AI returned no code" }, { status: 500 });

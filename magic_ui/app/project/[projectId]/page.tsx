@@ -19,7 +19,7 @@ import { ScreenConfig, ProjectType } from '@/type/types';
 
 export default function ProjectCanvasPlayground() {
   const { projectId } = useParams();
-  
+
   // State Management
   const [projectDetail, setProjectDetail] = useState<ProjectType>();
   const [screenConfig, setScreenConfig] = useState<ScreenConfig[]>([]);
@@ -27,7 +27,7 @@ export default function ProjectCanvasPlayground() {
   const [loadingMsg, setLoadingMsg] = useState<string>("Loading");
 
   // Screenshot state: used as a trigger signal
-  const [screenshotTrigger, setScreenshotTrigger] = useState<boolean>(false); 
+  const [screenshotTrigger, setScreenshotTrigger] = useState<boolean>(false);
 
   // Context Hooks
   const { setSettingsDetail } = useContext<any>(SettingContext);
@@ -74,7 +74,7 @@ export default function ProjectCanvasPlayground() {
         GenerateScreenUIUX();
       }
     }
-  }, [projectDetail, screenConfig.length]); 
+  }, [projectDetail, screenConfig.length]);
 
   const generateScreenConfig = async () => {
     setLoading(true);
@@ -85,11 +85,11 @@ export default function ProjectCanvasPlayground() {
         deviceType: projectDetail?.device,
         userInput: projectDetail?.userInput,
       });
-      hasStartedGeneration.current = false; 
+      hasStartedGeneration.current = false;
       await GetProjectDetail();
     } catch (error) {
       console.error('Config Generation Error:', error);
-      hasStartedGeneration.current = false; 
+      hasStartedGeneration.current = false;
     } finally {
       setLoading(false);
     }
@@ -98,27 +98,40 @@ export default function ProjectCanvasPlayground() {
   const GenerateScreenUIUX = async () => {
     setLoading(true);
     try {
+      // Use a local verified list to avoid closure staleness if possible, 
+      // though iterating screenConfig state is fine if we don't depend on intermediate updates for control flow
+      const screensToGenerate = screenConfig.filter(s => !s.code);
+
       for (let index = 0; index < screenConfig.length; index++) {
         const screen = screenConfig[index];
         if (screen?.code) continue;
 
         setLoadingMsg(`Generating Screen ${index + 1} of ${screenConfig.length}`);
-        const result = await axios.post('/api/generate-screen-ui', {
-          projectId,
-          screenId: screen.screenId,
-          screenName: screen.screenName,
-          purpose: screen.purpose || '',
-          screenDescription: screen.screenDescription || '',
-          projectVisualDescription: projectDetail?.userInput || ''
-        });
 
-        const newCode = result.data.code || result.data.data?.code;
-        setScreenConfig(prev => prev.map((item, i) => i === index ? { ...item, code: newCode } : item));
+        try {
+          const result = await axios.post('/api/generate-screen-ui', {
+            projectId,
+            screenId: screen.screenId,
+            screenName: screen.screenName,
+            purpose: screen.purpose || '',
+            screenDescription: screen.screenDescription || '',
+            projectVisualDescription: projectDetail?.userInput || ''
+          });
+
+          const newCode = result.data.code || result.data.data?.code;
+          if (newCode) {
+            setScreenConfig(prev => prev.map((item, i) => i === index ? { ...item, code: newCode } : item));
+          }
+        } catch (innerError) {
+          console.error(`Failed to generate screen ${index}:`, innerError);
+          // Continue with other screens even if one fails
+        }
       }
     } catch (error) {
-      console.error("Error generating screen UI/UX:", error);
-      hasStartedGeneration.current = false; 
+      console.error("Error generating screen UI/UX process:", error);
     } finally {
+      // ✅ FIX: Always release the lock so new screens can be generated later
+      hasStartedGeneration.current = false;
       setLoading(false);
       // Optional: Auto-trigger screenshot after full generation
       // setScreenshotTrigger(true); 
@@ -137,22 +150,22 @@ export default function ProjectCanvasPlayground() {
           </div>
         )}
 
-        <SettingSection 
+        <SettingSection
           projectDetail={projectDetail}
           screenDescription={screenConfig[0]?.screenDescription}
           // ✅ Change: Clicking the button sets the trigger to TRUE
           takeScreenshot={() => setScreenshotTrigger(true)}
         />
-        
+
         <main className="flex-1 relative">
-           <Canvas 
-             projectDetail={projectDetail} 
-             screenConfig={screenConfig} 
-             // ✅ Pass the trigger
-             screenshotTrigger={screenshotTrigger}
-             // ✅ Pass the reset function so Canvas can turn it back to FALSE when done
-             onScreenshotComplete={() => setScreenshotTrigger(false)}
-           />
+          <Canvas
+            projectDetail={projectDetail}
+            screenConfig={screenConfig}
+            // ✅ Pass the trigger
+            screenshotTrigger={screenshotTrigger}
+            // ✅ Pass the reset function so Canvas can turn it back to FALSE when done
+            onScreenshotComplete={() => setScreenshotTrigger(false)}
+          />
         </main>
       </div>
     </div>

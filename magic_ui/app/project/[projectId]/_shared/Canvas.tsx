@@ -16,7 +16,7 @@ type Props = {
     screenConfig: ScreenConfig[];
     loading?: boolean;
     // ✅ Prop name changed to match page.tsx
-    screenshotTrigger: boolean; 
+    screenshotTrigger: boolean;
     onScreenshotComplete: () => void;
 };
 
@@ -38,16 +38,16 @@ const Controls = () => {
     );
 };
 
-const Canvas = ({ 
-    projectDetail, 
-    screenConfig, 
-    loading, 
-    screenshotTrigger, 
-    onScreenshotComplete 
+const Canvas = ({
+    projectDetail,
+    screenConfig,
+    loading,
+    screenshotTrigger,
+    onScreenshotComplete
 }: Props) => {
     const [panningEnabled, setPanningEnabled] = useState(true);
-    // ✅ Initialize as an empty object/array to store refs by screen index
-    const iframeRefs = useRef<{ [key: number]: HTMLIFrameElement | null }>({});
+    // ✅ Use a map to store stable RefObjects for each screen
+    const iframeRefs = useRef<Map<string | number, React.MutableRefObject<HTMLIFrameElement | null>>>(new Map());
 
     const isMobile = projectDetail?.device === "mobile";
     const SCREEN_WIDTH = isMobile ? 400 : 1024;
@@ -60,6 +60,14 @@ const Canvas = ({
             onTakeScreenshot();
         }
     }, [screenshotTrigger]);
+
+    // Helper to get or create a stable RefObject for a screen
+    const getIframeRef = (screenId: string | number) => {
+        if (!iframeRefs.current.has(screenId)) {
+            iframeRefs.current.set(screenId, React.createRef() as React.MutableRefObject<HTMLIFrameElement | null>);
+        }
+        return iframeRefs.current.get(screenId)!;
+    };
 
     const captureOneIframe = async (iframe: HTMLIFrameElement) => {
         try {
@@ -84,9 +92,12 @@ const Canvas = ({
     };
 
     const onTakeScreenshot = async () => {
-        // Filter out null refs and get actual elements
-        const activeIframes = Object.values(iframeRefs.current).filter(Boolean) as HTMLIFrameElement[];
-        
+        // Filter out null refs and get actual elements from the RefObjects
+        const activeIframes: HTMLIFrameElement[] = [];
+        iframeRefs.current.forEach((ref) => {
+            if (ref.current) activeIframes.push(ref.current);
+        });
+
         if (activeIframes.length === 0) {
             toast.error("No active screens found to capture.");
             onScreenshotComplete();
@@ -99,15 +110,23 @@ const Canvas = ({
             const shotCanvases: HTMLCanvasElement[] = [];
             for (const iframe of activeIframes) {
                 const c = await captureOneIframe(iframe);
-                if (c) shotCanvases.push(c);
+                if (c) {
+                    shotCanvases.push(c);
+                } else {
+                    console.warn(`Skipping screen ${iframe.title} due to capture error.`);
+                }
             }
 
-            if (shotCanvases.length === 0) throw new Error("Capture returned empty");
+            if (shotCanvases.length === 0) {
+                toast.error("Failed to capture any screens completely.");
+                onScreenshotComplete();
+                return;
+            }
 
             // Stitching Logic
             const headerH = 40;
             const totalWidth = (SCREEN_WIDTH * shotCanvases.length) + (GAP * (shotCanvases.length - 1));
-            
+
             const finalCanvas = document.createElement("canvas");
             finalCanvas.width = totalWidth;
             finalCanvas.height = SCREEN_HEIGHT + headerH;
@@ -125,10 +144,10 @@ const Canvas = ({
             }
 
             const base64Url = finalCanvas.toDataURL("image/png");
-            
+
             // 1. Update DB
             await updateProjectWithScreenShot(base64Url);
-            
+
             // 2. Trigger Download
             const link = document.createElement("a");
             link.href = base64Url;
@@ -141,7 +160,7 @@ const Canvas = ({
             toast.error("Export failed.", { id: toastId });
         } finally {
             // ✅ CRITICAL: Reset the trigger in page.tsx so it can be clicked again
-            onScreenshotComplete(); 
+            onScreenshotComplete();
         }
     };
 
@@ -157,7 +176,7 @@ const Canvas = ({
     };
 
     return (
-        <div 
+        <div
             className='w-full h-[calc(100vh-65px)] bg-gray-50 overflow-hidden relative border-t'
             style={{
                 backgroundImage: "radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px)",
@@ -186,31 +205,31 @@ const Canvas = ({
                         <Controls />
                         <TransformComponent
                             wrapperStyle={{ width: '100%', height: '100%' }}
-                            contentStyle={{ 
-                                padding: '400px', 
-                                display: 'flex', 
-                                alignItems: 'flex-start' 
+                            contentStyle={{
+                                padding: '400px',
+                                display: 'flex',
+                                alignItems: 'flex-start'
                             }}
                         >
                             <div className="flex" style={{ gap: `${GAP}px` }}>
                                 {screenConfig.map((screen, index) => (
                                     <div key={screen.id || index}>
                                         {screen?.code ? (
-                                            <ScreenFrame 
-                                                x={index * (SCREEN_WIDTH + GAP)} 
-                                                y={0} 
-                                                width={SCREEN_WIDTH} 
+                                            <ScreenFrame
+                                                x={index * (SCREEN_WIDTH + GAP)}
+                                                y={0}
+                                                width={SCREEN_WIDTH}
                                                 height={SCREEN_HEIGHT}
-                                                setPanningEnabled={setPanningEnabled} 
+                                                setPanningEnabled={setPanningEnabled}
                                                 htmlCode={screen.code}
                                                 projectDetail={projectDetail}
                                                 screenName={screen.screenName}
                                                 screen={screen}
-                                                // ✅ Pass ref correctly to the array
-                                                iframeRef={(el: any) => (iframeRefs.current[index] = el)}
+                                                // ✅ Pass a clean RefObject
+                                                iframeRef={getIframeRef(screen.screenId || index)}
                                             />
                                         ) : (
-                                            <div 
+                                            <div
                                                 className='bg-white rounded-2xl p-6 shadow-xl flex flex-col gap-4 border border-gray-100 animate-pulse'
                                                 style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
                                             >
