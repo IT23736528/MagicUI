@@ -5,6 +5,8 @@ import { GENERATE_SCREEN_PROMPT } from "@/data/Prompt";
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 const TIMEOUT_MS = 60_000;
 
 // ✅ SDK-Safe Response Type
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest) {
       Generate a complete, functional React component using Tailwind CSS.
     `.trim();
 
-    const promptText = GENERATE_SCREEN_PROMPT?.replace("{deviceType}", "mobile") || 
+    const promptText = GENERATE_SCREEN_PROMPT?.replace("{deviceType}", "mobile") ||
       "Generate a functional React component with Tailwind CSS. Return ONLY code.";
 
     // 5️⃣ AI Request (Using your specific SDK .chat.send)

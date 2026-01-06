@@ -6,49 +6,50 @@ import crypto from "crypto";
 import { and, eq } from "drizzle-orm";
 
 
+export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest){
-    const {userInput, device} = await req.json();
+export async function POST(req: NextRequest) {
+    const { userInput, device } = await req.json();
     const user = await currentUser();
     const projectId = crypto.randomUUID();
 
-    const result= await db.insert(ProjectTable).values({
+    const result = await db.insert(ProjectTable).values({
         projectId: projectId,
         userId: user?.primaryEmailAddress?.emailAddress as string,
         device: device,
         userInput: userInput,
-        
+
     }).returning();
 
     return NextResponse.json(result[0]);
 }
 
 export async function GET(req: NextRequest) {
-    const projectId= await req.nextUrl.searchParams.get('projectId');
+    const projectId = await req.nextUrl.searchParams.get('projectId');
     const user = await currentUser()
 
-    try{
-    const result = await db.select().from(ProjectTable).where(and(eq(ProjectTable.projectId,projectId as string),eq(ProjectTable.userId,user?.primaryEmailAddress?.emailAddress as string)))
-    const ScreenConfig= await db.select().from(ScreenConfigTable).where(eq(ScreenConfigTable.projectId,projectId as string));
+    try {
+        const result = await db.select().from(ProjectTable).where(and(eq(ProjectTable.projectId, projectId as string), eq(ProjectTable.userId, user?.primaryEmailAddress?.emailAddress as string)))
+        const ScreenConfig = await db.select().from(ScreenConfigTable).where(eq(ScreenConfigTable.projectId, projectId as string));
 
-    return NextResponse.json({
-        projectDetail: result[0],
-        screenConfig: ScreenConfig,
-    });
-    } 
-    catch(e) {
-        return NextResponse.json({ msg: 'Error'});
+        return NextResponse.json({
+            projectDetail: result[0],
+            screenConfig: ScreenConfig,
+        });
+    }
+    catch (e) {
+        return NextResponse.json({ msg: 'Error' });
     }
 }
 
-export async function PUT(req:NextRequest){
-    const {projectName, theme, projectId, screenShot} = await req.json();
+export async function PUT(req: NextRequest) {
+    const { projectName, theme, projectId, screenShot } = await req.json();
 
     const result = await db.update(ProjectTable).set({
-        projectName:projectName,
+        projectName: projectName,
         theme: theme,
-        screenShot:screenShot as string??null
-        
+        screenShot: screenShot as string ?? null
+
     }).where(eq(ProjectTable.projectId, projectId as string)).returning();
 
     return NextResponse.json(result);

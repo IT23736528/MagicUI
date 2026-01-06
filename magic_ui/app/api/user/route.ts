@@ -4,6 +4,8 @@ import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
     try {
         const user = await currentUser();
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest) {
     } catch (error: any) {
         console.error("USER_ROUTE_ERROR:", error);
         return NextResponse.json(
-            { error: "Internal Server Error", details: error.message }, 
+            { error: "Internal Server Error", details: error.message },
             { status: 500 }
         );
     }
