@@ -22,17 +22,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing API key" }, { status: 500 });
     }
 
-    const { userInput, deviceType, projectId, oldScreenDescription, theme } = await req.json();
+    // 1. Strict Typing and Single Parse
+    interface GenerateConfigBody {
+      userInput: string;
+      deviceType: string;
+      projectId: string;
+      oldScreenDescription?: string;
+      theme?: string;
+    }
 
+    const body: GenerateConfigBody = await req.json();
+    const { userInput, deviceType, projectId, oldScreenDescription, theme } = body;
+
+    // 2. Strict Validation
     if (!userInput || !deviceType || !projectId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json({ error: "Missing required fields: userInput, deviceType, or projectId" }, { status: 400 });
     }
 
     // Determine the correct prompt
     const systemPrompt = oldScreenDescription
       ? GENRATE_NEW_SCREEN_IN_EXISITING_PROJECT_PROJECT
-          .replace("{deviceType}", deviceType)
-          .replace("{theme}", theme || "AURORA_INK")
+        .replace("{deviceType}", deviceType)
+        .replace("{theme}", theme || "AURORA_INK")
       : APP_LAYOUT_CONFIG_PROMPT.replace("{deviceType}", deviceType);
 
     const userPrompt = oldScreenDescription
@@ -75,7 +86,7 @@ export async function POST(req: NextRequest) {
     // 2️⃣ FLEXIBLE VALIDATION
     // If it's a new screen for existing project,projectName might be optional
     const hasScreens = Array.isArray(parsed.screens) && parsed.screens.length > 0;
-    
+
     if (!hasScreens) {
       return NextResponse.json({ error: "AI failed to generate screen configs", parsed }, { status: 502 });
     }
@@ -97,7 +108,7 @@ export async function POST(req: NextRequest) {
         projectId: projectId,
         purpose: screen.purpose,
         screenDescription: screen.layoutDescription || screen.description,
-        screenId: screen.id || screen.screenId, 
+        screenId: screen.id || screen.screenId,
         screenName: screen.name || screen.screenName,
       }).returning();
       insertedScreens.push(result[0]);
