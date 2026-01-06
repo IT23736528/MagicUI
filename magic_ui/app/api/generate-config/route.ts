@@ -6,6 +6,8 @@ import { currentUser } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 const TIMEOUT_MS = 30_000;
 
 type OpenRouterResponse = {
