@@ -1,48 +1,68 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useMemo, useContext } from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import { useParams } from 'next/navigation';
-import ProjectHeader from './_shared/ProjectHeader';
-import SettingSection from './_shared/SettingSection';
 import axios from 'axios';
 import { Loader2Icon } from 'lucide-react';
-import { ScreenConfig, ProjectType } from '@/type/types';
+
+// Shared Components
+import ProjectHeader from './_shared/ProjectHeader';
+import SettingSection from './_shared/SettingSection';
 import Canvas from './_shared/Canvas';
+
+// Contexts
 import { SettingContext } from '@/context/SettingContext';
 import { RefreshDataContext } from '@/context/RefreshDataContext';
 
+// Types
+import { ScreenConfig, ProjectType } from '@/type/types';
+
 export default function ProjectCanvasPlayground() {
   const { projectId } = useParams();
+  
+  // State Management
   const [projectDetail, setProjectDetail] = useState<ProjectType>();
   const [screenConfig, setScreenConfig] = useState<ScreenConfig[]>([]);
-  const {settingsDetail,setSettingsDetail}=useContext<any>(SettingContext);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingMsg, setLoadingMsg] = useState<string>("Loading");
-  const {refreshData,setRefreshData}=useContext(RefreshDataContext);
 
-  // Track generation to prevent infinite loops
+  // Context Hooks
+  const { setSettingsDetail } = useContext<any>(SettingContext);
+  const { refreshData } = useContext<any>(RefreshDataContext);
+
+  // Track generation to prevent infinite loops and handle resets
   const hasStartedGeneration = useRef(false);
 
+  // 1. Initial Data Fetch
   useEffect(() => {
     if (projectId) {
       GetProjectDetail();
     }
   }, [projectId]);
 
+  // 2. Handle Manual Refresh/Data Update
   useEffect(() => {
-    if(refreshData?.method==='screenConfig'){
+    if (refreshData?.method === 'screenConfig') {
+      // Reset the generation lock so new changes can trigger UI generation if needed
+      hasStartedGeneration.current = false;
       GetProjectDetail();
     }
-  }, [refreshData])
+  }, [refreshData]);
 
   const GetProjectDetail = async () => {
     setLoading(true);
     setLoadingMsg("Loading Project Details...");
     try {
-      const result = await axios.get('/api/project?projectId=' + projectId);
-      setProjectDetail(result?.data?.projectDetail);
-      setScreenConfig(result?.data?.screenConfig || []);
-      setSettingsDetail(result?.data?.projectDetail);
+      const result = await axios.get(`/api/project?projectId=${projectId}`);
+      const data = result?.data;
+      
+      setProjectDetail(data?.projectDetail);
+      setScreenConfig(data?.screenConfig || []);
+      
+      // Sync global settings context
+      if (data?.projectDetail) {
+        setSettingsDetail(data.projectDetail);
+      }
     } catch (error) {
       console.error("Error fetching project details:", error);
     } finally {
@@ -50,9 +70,9 @@ export default function ProjectCanvasPlayground() {
     }
   };
 
-  // Logic to decide when to generate
+  // 3. Logic to decide when to trigger AI Generation
   useEffect(() => {
-    // Only proceed if we have details and haven't already locked the generation process
+    // Only proceed if project meta is loaded and we aren't already generating
     if (!projectDetail || hasStartedGeneration.current) return;
 
     if (screenConfig.length === 0) {
@@ -65,8 +85,6 @@ export default function ProjectCanvasPlayground() {
         GenerateScreenUIUX();
       }
     }
-    // We only trigger this when projectDetail is loaded or if screens are missing
-    // Adding screenConfig.length as a dependency is safer than the whole array
   }, [projectDetail, screenConfig.length]); 
 
   const generateScreenConfig = async () => {
@@ -78,12 +96,13 @@ export default function ProjectCanvasPlayground() {
         deviceType: projectDetail?.device,
         userInput: projectDetail?.userInput,
       });
-      // Allow the effect to run again to start UI generation
+      
+      // Reset lock and refetch to transition to UI generation phase
       hasStartedGeneration.current = false; 
       await GetProjectDetail();
     } catch (error) {
       console.error('Config Generation Error:', error);
-      hasStartedGeneration.current = false; // Reset on error so it can retry
+      hasStartedGeneration.current = false; 
     } finally {
       setLoading(false);
     }
@@ -92,7 +111,7 @@ export default function ProjectCanvasPlayground() {
   const GenerateScreenUIUX = async () => {
     setLoading(true);
     try {
-      // Loop through the config and generate missing UI
+      // Iterate through missing code screens
       for (let index = 0; index < screenConfig.length; index++) {
         const screen = screenConfig[index];
         if (screen?.code) continue;
@@ -108,35 +127,42 @@ export default function ProjectCanvasPlayground() {
           projectVisualDescription: projectDetail?.userInput || ''
         });
 
-        // Update local state immediately so Canvas shows progress
+        const newCode = result.data.code || result.data.data?.code;
+
+        // Functional update to local state so Canvas updates screen-by-screen
         setScreenConfig(prev => prev.map((item, i) => 
-          i === index ? { ...item, code: result.data.code || result.data.data?.code } : item
+          i === index ? { ...item, code: newCode } : item
         ));
       }
     } catch (error) {
       console.error("Error generating screen UI/UX:", error);
-      hasStartedGeneration.current = false; // Reset on error
+      hasStartedGeneration.current = false; 
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-white">
       <ProjectHeader />
-      <div className="flex gap-5">
+      <div className="flex gap-5 h-[calc(100vh-65px)] overflow-hidden">
+        {/* Progress Overlay */}
         {loading && (
-          <div className='p-3 absolute bg-blue-300/20 border border-blue-400 rounded-xl left-1/2 top-20 transform -translate-x-1/2 z-50'>
-            <h2 className='flex gap-2 items-center'>
+          <div className='p-3 fixed bg-white/80 backdrop-blur-sm border border-blue-200 rounded-xl left-1/2 top-24 transform -translate-x-1/2 z-[100] shadow-lg'>
+            <h2 className='flex gap-2 items-center text-blue-600 font-medium'>
               <Loader2Icon className='animate-spin' /> {loadingMsg}
             </h2>
           </div>
         )}
-        <SettingSection projectDetail={projectDetail} />
+
+        <SettingSection 
+          projectDetail={projectDetail}
+          screenDescription={screenConfig[0]?.screenDescription}
+        />
         
-        <div className="flex-1">
+        <main className="flex-1 relative">
            <Canvas projectDetail={projectDetail} screenConfig={screenConfig} />
-        </div>
+        </main>
       </div>
     </div>
   );
