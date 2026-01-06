@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from 'react';
-import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
 import ScreenFrame from './ScreenFrame';
 import { ProjectType, ScreenConfig } from '@/type/types';
-import { Loader2Icon, MousePointer2Icon } from 'lucide-react';
+import { Loader2Icon, Minus, MousePointer2Icon, Plus, RefreshCw, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 type Props = {
     projectDetail: ProjectType | undefined;
@@ -24,6 +25,18 @@ const Canvas = ({ projectDetail, screenConfig, loading }: Props) => {
     const SCREEN_WIDTH = isMobile ? 400 : 1024; 
     const SCREEN_HEIGHT = 800; 
     const GAP = isMobile ? 50 : 100;
+
+    const Controls = () => {
+        const { zoomIn, zoomOut, resetTransform } = useControls();
+
+        return (
+            <div className="tools absolute p-2 px-3 bg-white shadow flex gap-3 rounded-4xl bottom-10 left-1/3 z-30 text-gray-500">
+            <Button variant={'ghost'} size={'sm'} onClick={() => zoomIn()}><Plus /></Button>
+            <Button variant={'ghost'} size={'sm'} onClick={() => zoomOut()}><Minus /></Button>
+            <Button variant={'ghost'} size={'sm'} onClick={() => resetTransform()}><RefreshCw /></Button>
+            </div>
+        );
+    };
 
     return (
         <div 
@@ -60,6 +73,11 @@ const Canvas = ({ projectDetail, screenConfig, loading }: Props) => {
                 panning={{ disabled: !panningEnabled, velocityDisabled: true }}
                 wheel={{ step: 0.05 }}
             >
+
+                {({ zoomIn, zoomOut, resetTransform, ...rest }) => (
+        <>
+          <Controls />
+
                 <TransformComponent
                     wrapperStyle={{ width: '100%', height: '100%' }}
                     contentStyle={{ 
@@ -103,6 +121,7 @@ const Canvas = ({ projectDetail, screenConfig, loading }: Props) => {
                         ))}
                     </div>
                 </TransformComponent>
+                </>)}
             </TransformWrapper>
 
             {/* 4. Canvas Legend (Optional Helper) */}

@@ -40,3 +40,15 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ msg: 'Error'});
     }
 }
+
+export async function PUT(req:NextRequest){
+    const {projectName, theme, projectId} = await req.json();
+
+    const result = await db.update(ProjectTable).set({
+        projectName:projectName,
+        theme: theme,
+        
+    }).where(eq(ProjectTable.projectId, projectId as string)).returning();
+
+    return NextResponse.json(result);
+}
