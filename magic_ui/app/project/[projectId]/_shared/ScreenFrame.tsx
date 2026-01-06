@@ -2,10 +2,12 @@
 
 import { SettingContext } from '@/context/SettingContext';
 import { THEMES, themeToCssVars, ThemeKey } from '@/data/Themes';
-import { ProjectType } from '@/type/types';
+import { ProjectType, ScreenConfig } from '@/type/types';
 import { GripVertical, Monitor, Smartphone } from 'lucide-react';
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Rnd } from "react-rnd";
+import ScreenHandler from './ScreenHandler';
+import { HtmlWrapper } from '@/data/constant';
 
 type Props = {
     x: number;
@@ -16,6 +18,7 @@ type Props = {
     htmlCode: string | undefined;
     projectDetail: ProjectType | undefined;
     screenName?: string;
+    screen:ScreenConfig | undefined;
 }
 
 const ScreenFrame = ({ 
@@ -26,18 +29,23 @@ const ScreenFrame = ({
     height, 
     htmlCode, 
     projectDetail, 
-    screenName 
+    screenName,
+    screen
 }: Props) => {
     // ✅ 1. Move useContext to the top level (Hook rule)
     const { settingsDetail } = useContext(SettingContext);
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const [size, setSize] = useState({ width, height });
 
+    
+
     // Resolve the theme safely
     const theme = useMemo(() => {
         const selectedTheme = settingsDetail?.theme ?? projectDetail?.theme;
         return THEMES[selectedTheme as ThemeKey] || THEMES.AURORA_INK;
     }, [settingsDetail?.theme, projectDetail?.theme]);
+
+    const html= HtmlWrapper(theme,htmlCode as string);
 
     // Update size when props change
     useEffect(() => {
@@ -151,10 +159,9 @@ const ScreenFrame = ({
                 {/* Header / Drag Handle */}
                 <div className='drag-handle flex justify-between items-center bg-zinc-100 border-b p-3 cursor-move select-none'>
                     <div className='flex items-center gap-2'>
-                        <GripVertical className='text-zinc-400 h-4 w-4' />
-                        <span className='text-xs font-semibold text-zinc-600 truncate max-w-[150px]'>
-                            {screenName || "Untitled Screen"}
-                        </span>
+                        
+                        <ScreenHandler screen={screen} theme={theme} iframeRef={iframeRef} projectId={projectDetail?.projectId}/>
+                        
                     </div>
                     <div className='flex gap-2 items-center'>
                        {projectDetail?.device === 'mobile' ? <Smartphone className='h-3 w-3 text-zinc-400'/> : <Monitor className='h-3 w-3 text-zinc-400'/>}

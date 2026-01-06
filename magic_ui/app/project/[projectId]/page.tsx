@@ -9,6 +9,7 @@ import { Loader2Icon } from 'lucide-react';
 import { ScreenConfig, ProjectType } from '@/type/types';
 import Canvas from './_shared/Canvas';
 import { SettingContext } from '@/context/SettingContext';
+import { RefreshDataContext } from '@/context/RefreshDataContext';
 
 export default function ProjectCanvasPlayground() {
   const { projectId } = useParams();
@@ -17,6 +18,7 @@ export default function ProjectCanvasPlayground() {
   const {settingsDetail,setSettingsDetail}=useContext<any>(SettingContext);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingMsg, setLoadingMsg] = useState<string>("Loading");
+  const {refreshData,setRefreshData}=useContext(RefreshDataContext);
 
   // Track generation to prevent infinite loops
   const hasStartedGeneration = useRef(false);
@@ -26,6 +28,12 @@ export default function ProjectCanvasPlayground() {
       GetProjectDetail();
     }
   }, [projectId]);
+
+  useEffect(() => {
+    if(refreshData?.method==='screenConfig'){
+      GetProjectDetail();
+    }
+  }, [refreshData])
 
   const GetProjectDetail = async () => {
     setLoading(true);
