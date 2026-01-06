@@ -4,6 +4,8 @@ import { ScreenConfigTable } from "@/config/schema";
 import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 type OpenRouterResponse = {
   choices?: {
     message?: {
