@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useContext } from 'react';
 import { useParams } from 'next/navigation';
 import ProjectHeader from './_shared/ProjectHeader';
 import SettingSection from './_shared/SettingSection';
@@ -8,11 +8,13 @@ import axios from 'axios';
 import { Loader2Icon } from 'lucide-react';
 import { ScreenConfig, ProjectType } from '@/type/types';
 import Canvas from './_shared/Canvas';
+import { SettingContext } from '@/context/SettingContext';
 
 export default function ProjectCanvasPlayground() {
   const { projectId } = useParams();
   const [projectDetail, setProjectDetail] = useState<ProjectType>();
   const [screenConfig, setScreenConfig] = useState<ScreenConfig[]>([]);
+  const {settingsDetail,setSettingsDetail}=useContext<any>(SettingContext);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingMsg, setLoadingMsg] = useState<string>("Loading");
 
@@ -32,6 +34,7 @@ export default function ProjectCanvasPlayground() {
       const result = await axios.get('/api/project?projectId=' + projectId);
       setProjectDetail(result?.data?.projectDetail);
       setScreenConfig(result?.data?.screenConfig || []);
+      setSettingsDetail(result?.data?.projectDetail);
     } catch (error) {
       console.error("Error fetching project details:", error);
     } finally {

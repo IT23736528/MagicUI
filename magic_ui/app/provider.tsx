@@ -1,4 +1,5 @@
 "use client"
+import { SettingContext } from '@/context/SettingContext';
 import { UserDetailContext } from '@/context/UserDetailContext';
 import axios from 'axios';
 import { set } from 'date-fns';
@@ -9,7 +10,10 @@ import React from 'react'
 
 function provider({children}:any) {
 
-    const [userDetail,setUserDetail]=useState()
+    const [userDetail,setUserDetail]=useState();
+
+    const [settingsDetail,setSettingsDetail]=useState();
+
     useEffect(()=> {
         CreateNewUser();
     }, [])
@@ -22,7 +26,11 @@ function provider({children}:any) {
     }
   return (
     <UserDetailContext.Provider value={{userDetail,setUserDetail}}>
-    <div>{children}</div>
+      <SettingContext.Provider value={{
+        settingsDetail,setSettingsDetail
+      }}>
+          <div>{children}</div>
+      </SettingContext.Provider>
     </UserDetailContext.Provider>
   )
 }

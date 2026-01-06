@@ -1,11 +1,12 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Camera, Share, Sparkles } from "lucide-react";
 import { THEME_NAME_LIST, THEMES } from "@/data/Themes";
 import { ProjectType } from "@/type/types";
+import { SettingContext } from "@/context/SettingContext";
 
 type Props = {
   projectDetail?: ProjectType;
@@ -15,11 +16,22 @@ const SettingSection = ({ projectDetail }: Props) => {
   const [projectName, setProjectName] = useState("");
   const [selectedTheme, setSelectedTheme] = useState("AURORA_INK");
   const [userNewScreenInput, setUserNewScreenInput] = useState("");
+  const {settingsDetail,setSettingsDetail}=useContext<any>(SettingContext);
+
 
   // ✅ Fixed: Sync project name when projectDetail changes
   useEffect(() => {
     setProjectName(projectDetail?.projectName || "");
+    setSelectedTheme(projectDetail?.theme as string);
+    setSettingsDetail(projectDetail);
   }, [projectDetail]);
+
+  const onThemeSelect = (theme: string) => {
+    setSelectedTheme(theme);
+    setSelectedTheme((prev: any)=>({
+      ...prev,
+      theme:theme
+    }))
 
   return (
     <div className="w-[300px] bg-gray-100 h-[90vh] p-4">
@@ -61,7 +73,7 @@ const SettingSection = ({ projectDetail }: Props) => {
                   ? "border-primary bg-primary/20"
                   : ""
               }`}
-              onClick={() => setSelectedTheme(theme)}
+              onClick={() => onThemeSelect(theme)}
             >
               <h2>{theme}</h2>
               <div className="flex gap-2 mt-1">
