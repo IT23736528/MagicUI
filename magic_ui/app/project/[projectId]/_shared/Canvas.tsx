@@ -34,6 +34,7 @@ const Controls = () => {
 };
 
 const Canvas = ({ projectDetail, screenConfig, loading }: Props) => {
+    // This state controls whether the background canvas is allowed to pan
     const [panningEnabled, setPanningEnabled] = useState(true);
 
     const isMobile = projectDetail?.device === "mobile";
@@ -53,7 +54,7 @@ const Canvas = ({ projectDetail, screenConfig, loading }: Props) => {
             {loading && screenConfig.length === 0 && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
                     <Loader2Icon className="animate-spin text-blue-600 w-12 h-12 mb-4" />
-                    <p className="text-gray-600 font-medium animate-pulse">Initializing Canvas...</p>
+                    <p className="text-gray-600 font-medium animate-pulse text-sm">Initializing Canvas...</p>
                 </div>
             )}
 
@@ -61,7 +62,7 @@ const Canvas = ({ projectDetail, screenConfig, loading }: Props) => {
             {!loading && screenConfig.length === 0 && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
                     <MousePointer2Icon className="w-12 h-12 mb-2 opacity-20" />
-                    <p>No screens to display yet.</p>
+                    <p className="text-sm">No screens to display yet.</p>
                 </div>
             )}
 
@@ -71,6 +72,8 @@ const Canvas = ({ projectDetail, screenConfig, loading }: Props) => {
                 maxScale={2}
                 centerOnInit={true}
                 limitToBounds={false}
+                disabled={!panningEnabled} // Completely disable zoom/pan when dragging a frame
+                doubleClick={{ disabled: true }} // Prevents zoom-resetting when clicking buttons inside screens
                 panning={{ disabled: !panningEnabled }}
                 wheel={{ step: 0.05 }}
             >
@@ -79,13 +82,18 @@ const Canvas = ({ projectDetail, screenConfig, loading }: Props) => {
                         <Controls />
                         <TransformComponent
                             wrapperStyle={{ width: '100%', height: '100%' }}
-                            contentStyle={{ padding: '200px', display: 'flex', alignItems: 'flex-start' }}
+                            contentStyle={{ 
+                                padding: '400px', // Large padding allows for dragging far beyond edges
+                                display: 'flex', 
+                                alignItems: 'flex-start' 
+                            }}
                         >
                             <div className="flex" style={{ gap: `${GAP}px` }}>
                                 {screenConfig.map((screen, index) => (
                                     <div key={screen.id || index}>
                                         {screen?.code ? (
                                             <ScreenFrame 
+                                                // Unique position for each screen
                                                 x={index * (SCREEN_WIDTH + GAP)} 
                                                 y={0} 
                                                 width={SCREEN_WIDTH} 
@@ -97,21 +105,22 @@ const Canvas = ({ projectDetail, screenConfig, loading }: Props) => {
                                                 screen={screen}
                                             />
                                         ) : (
+                                            /* Skeleton Loader while AI generates individual code */
                                             <div 
-                                                className='bg-white rounded-2xl p-6 shadow-xl flex flex-col gap-4 border border-gray-100'
+                                                className='bg-white rounded-2xl p-6 shadow-xl flex flex-col gap-4 border border-gray-100 animate-pulse'
                                                 style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
                                             >
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <Loader2Icon className="w-4 h-4 animate-spin text-blue-500" />
+                                                    <Loader2Icon className="w-4 h-4 animate-spin text-blue-400" />
                                                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Generating UI...</span>
                                                 </div>
-                                                <Skeleton className='w-full h-12 bg-gray-100' />
-                                                <Skeleton className='w-3/4 h-32 bg-gray-50' />
-                                                <Skeleton className='w-full h-10 bg-gray-50' />
-                                                <Skeleton className='w-1/2 h-10 bg-gray-50' />
+                                                <Skeleton className='w-full h-12 bg-gray-100 rounded-lg' />
+                                                <Skeleton className='w-3/4 h-32 bg-gray-50 rounded-lg' />
+                                                <Skeleton className='w-full h-10 bg-gray-50 rounded-lg' />
+                                                <Skeleton className='w-1/2 h-10 bg-gray-50 rounded-lg' />
                                                 <div className="mt-auto flex gap-2">
-                                                    <Skeleton className='w-full h-12 bg-gray-100' />
-                                                    <Skeleton className='w-full h-12 bg-gray-100' />
+                                                    <Skeleton className='w-full h-12 bg-gray-100 rounded-lg' />
+                                                    <Skeleton className='w-full h-12 bg-gray-100 rounded-lg' />
                                                 </div>
                                             </div>
                                         )}
@@ -123,7 +132,7 @@ const Canvas = ({ projectDetail, screenConfig, loading }: Props) => {
                 )}
             </TransformWrapper>
 
-            <div className="absolute bottom-4 left-4 bg-white/80 p-2 rounded-md shadow-sm border text-[10px] text-gray-500 uppercase tracking-widest">
+            <div className="absolute bottom-4 left-4 bg-white/80 p-2 px-3 rounded-full shadow-sm border text-[10px] text-gray-500 uppercase tracking-widest font-semibold pointer-events-none">
                 Scroll to Zoom • Drag to Pan
             </div>
         </div>
